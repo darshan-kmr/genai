@@ -1,0 +1,34 @@
+!pip install gensim
+!pip install numpy
+import gensim
+from gensim.models import Word2Vec
+import nltk
+from nltk.tokenize import word_tokenize
+import string
+import pandas as pd
+nltk.download('all')
+# https://www.kaggle.com/datasets/falgunipatel19/biomedical-text-publication-classification
+df = pd.read_csv("/content/alldata_1_for_kaggle.csv", encoding='ISO-8859-1')
+medical_corpus = df['a'].to_list()
+# Preprocessing: Tokenization & Lowercasing
+def preprocess_text(corpus):
+    processed = []
+    for sentence in corpus:
+        tokens = word_tokenize(sentence.lower())
+        tokens = [word for word in tokens if word.isalpha()]
+        processed.append(tokens)
+    return processed
+tokenized_corpus = preprocess_text(medical_corpus)
+model = Word2Vec(sentences=tokenized_corpus, vector_size=100, window=5, min_count=1, workers=4)
+model.save("medical_word2vec.model")
+model = Word2Vec.load("medical_word2vec.model")
+from google.colab import files
+uploaded = files.upload()
+file_name = "data.txt"  # Or whatever name it has after upload
+with open(file_name, "r") as data:
+    medical_corpus = data.readlines()
+# Find similarity between two medical terms
+similarity = model.wv.similarity("diabetes", "glucose")
+print("Similarity between 'diabetes' and 'glucose':", similarity)
+# Find words similar to 'diabetes'
+print("Words similar to 'diabetes':", model.wv.most_similar("diabetes"))
