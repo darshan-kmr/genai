@@ -1,0 +1,17 @@
+from google.colab import files
+uploaded = files.upload()  # Upload api_key.txt
+with open("api_key.txt", "r") as file:
+    api_key = file.read().strip().replace('\n', '').replace('\r', '')
+print(f"API key starts with: {api_key[:10]} ... ends with: {api_key[-10:]}")
+print(f"API key length: {len(api_key)}")
+import openai
+openai.api_key = api_key
+response = openai.ChatCompletion.create(
+    model="gpt-4o-mini",
+    messages=[{"role": "user", "content": "honesty is the best"}],
+    n=3,
+    temperature=1,
+)
+for i, choice in enumerate(response.choices, 1):
+    print(f"--- Response {i} ---")
+    print(choice
