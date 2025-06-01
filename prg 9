@@ -1,0 +1,52 @@
+!pip install wikipedia pydantic
+import wikipedia
+from pydantic import BaseModel, ValidationError
+from typing import List, Optional
+import re
+class InstitutionInfo(BaseModel):
+    name: str
+    founder: Optional[str]
+    founded: Optional[str]
+    branches: Optional[List[str]]
+    num_employees: Optional[int]
+    summary: str
+def parse_institution_info(institution_name: str) -> Optional[InstitutionInfo]:
+    try:
+        page = wikipedia.page(institution_name)
+        content = page.content
+        summary = wikipedia.summary(institution_name, sentences=4)
+        founder_match = re.search(r'(?i)founder[s]?:?\s*(.*)', content)
+        founder = founder_match.group(1).split('\n')[0] if founder_match else None
+        founded_match = re.search(r'(?i)founded[:\s]*([\w\s,]+)', content)
+        founded = founded_match.group(1).split('\n')[0] if founded_match else None
+        employees_match = re.search(r'(?i)(\d{3,}[,\d]*)\s+employees', content)
+        num_employees = int(employees_match.group(1).replace(',', '')) if employees_match else None
+        branches_match = re.findall(r'\b([A-Z][a-z]+(?: [A-Z][a-z]+)*) (campus|branch|location)', content)
+        branches = list(set([branch[0] for branch in branches_match])) if branches_match else None
+        return InstitutionInfo(
+            name=institution_name,
+            founder=founder,
+            founded=founded,
+            branches=branches,
+            num_employees=num_employees,
+            summary=summary
+        )
+    except (wikipedia.exceptions.DisambiguationError, wikipedia.exceptions.PageError) as e:
+        print(f"Error fetching Wikipedia page: {e}")
+        return None
+    except ValidationError as ve:
+        print(f"Validation Error: {ve}")
+        return None
+if __name__ == "__main__":
+    inst_name = input("Enter the name of the institution: ").strip()
+    info = parse_institution_info(inst_name)
+    if info:
+        print("\nInstitution Details:")
+        print(f"Name: {info.name}")
+        print(f"Founder: {info.founder}")
+        print(f"Founded: {info.founded}")
+        print(f"Branches: {info.branches}")
+        print(f"Employees: {info.num_employees}")
+        print(f"Summary:\n{info.summary}")
+    else:
+        print("Failed to retrieve institution information.")
