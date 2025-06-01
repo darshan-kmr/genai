@@ -1,0 +1,42 @@
+!pip install langchain langchain-community cohere pydrive
+import os
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
+from langchain.llms import Cohere
+from langchain.prompts import PromptTemplate
+from langchain.chains import LLMChain
+os.environ["COHERE_API_KEY"] = "EZaz8RMTWWVQ9lIj1oRXmHHRUpDMCYKUKwQDsUlJ"
+def load_text_from_gdrive(file_id: str) -> str:
+    gauth = GoogleAuth()
+    gauth.LocalWebserverAuth(port_numbers=[8000, 8010, 8020, 8030, 8040, 8050])
+    drive = GoogleDrive(gauth)
+    downloaded = drive.CreateFile({'id': file_id})
+    content = downloaded.GetContentString()
+    return content
+def run_langchain_with_document(text: str):
+    llm = Cohere(cohere_api_key=os.environ["COHERE_API_KEY"])
+    prompt = PromptTemplate(
+        input_variables=["document"],
+        template="""
+Below is a document. Please extract the key points in bullet format and ensure a formal tone.
+Document:
+{document}
+
+Summary in bullet points:
+"""
+    )
+    chain = LLMChain(llm=llm, prompt=prompt)
+    output = chain.run(document=text)
+    return output
+if __name__ == "__main__":
+    google_drive_file_id = "1NcMLzACpvTAAxU70f-tPUIFhco1Vx_gn"
+    try:
+        print("Loading document from Google Drive...")
+        document_text = load_text_from_gdrive(google_drive_file_id)
+        print("Document loaded successfully.\n")
+        print("Processing document with LangChain and Cohere...")
+        formatted_output = run_langchain_with_document(document_text)
+        print("\n--- Output ---")
+        print(formatted_output)
+    except Exception as e:
+        print(f"Error: {e}")
